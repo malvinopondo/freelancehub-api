@@ -6,13 +6,17 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
+    libpq-dev \
     zip \
     unzip \
     nodejs \
     npm \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -29,7 +33,7 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 # Copy the rest of the application
 COPY . .
 
-# Finish composer setup
+# Finish composer setup (runs artisan-related scripts now that app code is present)
 RUN composer dump-autoload --optimize
 
 # Install JS dependencies and build frontend assets (Vite/Laravel Mix)
@@ -45,7 +49,7 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
 # Expose the port Render will assign dynamically
 EXPOSE 10000
 
-# Run migrations and start the server
+# Run migrations (safe to fail silently on first boot if DB not ready) and start the server
 CMD php artisan config:cache && \
     php artisan route:cache && \
     php artisan migrate --force || true && \
