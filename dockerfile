@@ -1,56 +1,25 @@
-# ---- Base PHP image with required extensions ----
 FROM php:8.2-cli
 
-# Install system dependencies and PHP extensions Laravel typically needs
 RUN apt-get update && apt-get install -y \
     git \
     curl \
-    libpng-dev \
-    libjpeg62-turbo-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    libpq-dev \
     zip \
     unzip \
-    nodejs \
-    npm \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd zip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath
 
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www/html
+WORKDIR /app
 
-# Copy composer files first (better layer caching)
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
-
-# Copy the rest of the application
 COPY . .
 
-# Finish composer setup (runs artisan-related scripts now that app code is present)
-RUN composer dump-autoload --optimize
+RUN composer install --no-dev --optimize-autoloader
 
-# Install JS dependencies and build frontend assets (Vite/Laravel Mix)
-RUN if [ -f package.json ]; then \
-        yarn install || npm install; \
-        yarn build || npm run build; \
-    fi
+RUN php artisan config:clear
 
-# Laravel storage/cache permissions
-RUN mkdir -p storage/framework/{sessions,views,cache} \
-    && chmod -R 775 storage bootstrap/cache
+EXPOSE 8000
 
-# Expose the port Render will assign dynamically
-EXPOSE 10000
-
-# Run migrations (safe to fail silently on first boot if DB not ready) and start the server
-CMD php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan migrate --force || true && \
-    php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
+CMD php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=8000
