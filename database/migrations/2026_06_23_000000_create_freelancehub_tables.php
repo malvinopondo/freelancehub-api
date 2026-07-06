@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('category');
             $table->decimal('rate', 8, 2);
             $table->integer('hours');
-            $table->json('skills');
+            $table->text('skills');
             $table->text('description');
             $table->string('status');
             $table->string('type');
