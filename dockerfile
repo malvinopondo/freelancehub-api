@@ -17,3 +17,5 @@ RUN rm -f .env
 EXPOSE 8000
 
 CMD php artisan config:clear && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
+
+CMD echo "DATABASE_URL is: $DATABASE_URL" && php artisan config:clear && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
