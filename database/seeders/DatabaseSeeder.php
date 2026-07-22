@@ -1,11 +1,22 @@
-[phases.setup]
-nixPkgs = ["php82", "php82Extensions.pdo", "php82Extensions.pdo_mysql", "php82Extensions.mbstring", "php82Extensions.xml", "php82Extensions.curl", "composer"]
+<?php
 
-[phases.install]
-cmds = ["composer install --no-dev --optimize-autoloader"]
+namespace Database\Seeders;
 
-[phases.build]
-cmds = ["php artisan config:clear", "php artisan route:clear"]
+use Illuminate\Database\Seeder;
 
-[start]
-cmd = "php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=$PORT"
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        $this->call([
+            JobPostingSeeder::class,   // must run before ApplicationSeeder (FK: job_id)
+            ApplicationSeeder::class,
+            PaymentSeeder::class,
+            ContactSeeder::class,      // must run before MessageSeeder (FK: contact_id)
+            MessageSeeder::class,
+        ]);
+    }
+}
