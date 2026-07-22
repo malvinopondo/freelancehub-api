@@ -1,6 +1,7 @@
 <?php
 
 namespace Database\Seeders;
+use function fake;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
