@@ -12,11 +12,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            JobPostingSeeder::class,   // must run before ApplicationSeeder (FK: job_id)
-            ApplicationSeeder::class,
-            PaymentSeeder::class,
-            ContactSeeder::class,      // must run before MessageSeeder (FK: contact_id)
-            MessageSeeder::class,
+            // Add your seeder classes here, e.g.:
+            // UserSeeder::class,
+            // JobSeeder::class,
+            // ApplicationSeeder::class,
+            // ContactSeeder::class,
+            // MessageSeeder::class,
+            // PaymentSeeder::class,
         ]);
     }
 }
