@@ -1,19 +1,68 @@
 <?php
 
-use App\Http\Controllers\ApiController;
-use App\Http\Controllers\AuthController;
-use Illuminate\Support\Facades\Route;
+namespace App\Http\Controllers;
 
-Route::post('/login', [AuthController::class, 'login']);
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/me', [AuthController::class, 'me']);
-});
+class AuthController extends Controller
+{
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:191'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+        ]);
 
-Route::get('/jobs',         [ApiController::class, 'jobs']);
-Route::get('/applications', [ApiController::class, 'applications']);
-Route::get('/payments',     [ApiController::class, 'payments']);
-Route::get('/contacts',     [ApiController::class, 'contacts']);
-Route::get('/messages',     [ApiController::class, 'messages']);
-Route::get('/users',        [ApiController::class, 'users']);
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+        ]);
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user->only(['id', 'name', 'email']),
+            'token' => $token,
+        ], 201);
+    }
+
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user->only(['id', 'name', 'email']),
+            'token' => $token,
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logged out']);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json($request->user());
+    }
+}
